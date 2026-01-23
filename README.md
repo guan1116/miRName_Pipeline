@@ -95,3 +95,41 @@ miRName is typically deployed as a server-side pipeline.
 Migrate user submissions to the processing queue:
 ```bash
 python transfers_mirsubmit2mirname.py
+### 2. Run the Pipeline (The Wrapper)
+Execute the runner to process all pending sequences. This script automatically calls P1, P2, P3, and P4.
+
+```bash
+python naming_runner_mirbaseDB.py
+Note: This script handles locking automatically. Ensure hairpin.fa is present in the directory.
+
+3. Web Server (Django)
+Start the Django server to access the curation interface:
+
+Bash
+
+python manage.py runserver 0.0.0.0:8000
+Web Interface
+The miRName web interface provides a dashboard for manual curation and final validation.
+
+Alignment Visualization: Inspect detailed BLAST alignments between the candidate hairpin and known homologs.
+
+Smart Submit Page: Batch validate pending candidates. Respects the algorithm's original db_decision (Input vs. Reject) unless manually overridden.
+
+Reject Page: A dedicated button to forcefully reject all items on the current page to filter out low-quality noise quickly.
+
+Update Species Abbreviation: A batch tool to correct species prefixes (e.g., correcting Pab- to PaE-) across the entire submission while maintaining data integrity.
+
+Output
+Once curation is complete, users can generate the final submission files directly from the web interface.
+
+Validated List (miRBase Format)
+Clicking "Export Validated" generates a relational text file strictly adhering to miRBase submission standards.
+
+Example:
+
+Plaintext
+
+INSERT	FAMILY	let-7
+INSERT	HAIRPIN	pae-let-7a	Pab-Let-7-P1	Predicted miRNA	UGAGGUAG...	.	pae	let-7	Chr_Un	+	10	90
+INSERT	MATURE	pae-let-7a-5p	experimental	sequenced
+INSERT	HAIRPIN2MATURE	5	26	pae-let-7a	pae-let-7a-5p
