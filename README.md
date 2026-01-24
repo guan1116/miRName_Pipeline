@@ -48,43 +48,69 @@ The core naming logic is enforced by the scripts located in the `Bin/` directory
 
 ---
 
-## Project Architecture
-
-The pipeline follows a modular architecture controlled by a master wrapper.
-
-### Directory Structure
-* **root**: Contains the wrapper runners and ingestion scripts.
-* **Bin/**: Contains the core logic modules (P1 to P4).
-* **TestData/**: Contains anonymized input files for demonstration.
-
-### The Workflow Components
-
-**1. Data Ingestion (transfers_mirsubmit2mirname.py)**
-Bridges the submission interface (miRSubmit) and the SQL database. Extracts metadata and populates the processing queue.
-
-**2. The Wrapper (naming_runner_mirbaseDB.py)**
-* **Master Controller**: Monitors the database for pending tasks.
-* **Concurrency**: Manages file locking to prevent race conditions on the HPC.
-* **Orchestration**: Automatically calls the sub-programmes located in `Bin/`.
-
-**3. Core Modules (Located in Bin/)**
-* `naming_programme1.py`: **Identification** - Maps candidates to genome context.
-* `naming_programme2_mirbaseDB.py`: **Homology Search** - Local BLAST against miRBase.
-* `naming_programme3.py`: **Evidence Integration** - Defines mature/star boundaries.
-* `cleaned_naming_programme4.py`: **The Naming Engine** - Clusters sequences and applies V4.0 logic.
-
----
-
-## Installation & Dependencies
-
-Recommended to run within a `conda` environment.
+## Technical Specifications & Usage
 
 ```text
-python >= 3.9
-pandas
-numpy
-biopython
-sqlalchemy
-pymysql
-django
-ncbi-blast+
+================================================================================
+                        PIPELINE ARCHITECTURE & WORKFLOW
+================================================================================
+
+[ DIRECTORY STRUCTURE ]
+  root/
+   ├── naming_runner_mirbaseDB.py    # Master Wrapper (Orchestrator)
+   ├── transfers_mirsubmit...py      # Data Ingestion Script
+  Bin/
+   ├── naming_programme1.py          # P1: Identification & Genome Mapping
+   ├── naming_programme2...py        # P2: Homology Search (BLAST+)
+   ├── naming_programme3.py          # P3: Evidence Integration
+   ├── cleaned_naming_programme4.py  # P4: The Naming Engine (Clustering)
+  TestData/
+   ├── demo_input.fa                 # Anonymized input for demonstration
+
+[ WORKFLOW COMPONENTS ]
+  1. Data Ingestion
+     Extracts metadata from user submissions (miRSubmit) and populates the
+     SQL database processing queue.
+
+  2. The Wrapper (Master Controller)
+     - Monitors database for pending tasks.
+     - Manages file locking for HPC concurrency.
+     - Automatically calls sub-programmes (P1-P4) located in Bin/.
+
+  3. Core Logic Modules (Bin/)
+     - P1: Maps candidates to genome context.
+     - P2: Performs local BLAST against miRBase hairpin database.
+     - P3: Defines precise mature/star boundaries based on MIMAT.
+     - P4: Applies V4.0 logic to cluster sequences and assign names.
+
+================================================================================
+                                     USAGE
+================================================================================
+
+# Prerequisites
+  python >= 3.9, pandas, numpy, biopython, sqlalchemy, pymysql, ncbi-blast+
+
+# 1. Ingestion (Migrate Data)
+  $ python transfers_mirsubmit2mirname.py
+
+# 2. Execution (Run Pipeline)
+  # Triggers the wrapper to process all pending sequences in the queue.
+  # Automatically invokes scripts in the Bin/ directory.
+  $ python naming_runner_mirbaseDB.py
+
+# 3. Visualization (Web Server)
+  # Start the Django dashboard to view alignments (as shown in screenshots).
+  $ python manage.py runserver 0.0.0.0:8000
+
+================================================================================
+                             OUTPUT FORMAT (miRBase)
+================================================================================
+
+The system generates a strictly formatted submission file for database insertion.
+
+[ EXAMPLE OUTPUT ]
+  INSERT   FAMILY    let-7
+  INSERT   HAIRPIN   pae-let-7a     Pab-Let-7-P1    Predicted    UGAGGUAG...
+  INSERT   MATURE    pae-let-7a-5p  experimental    sequenced
+  INSERT   MATURE    pae-let-7a-3p  experimental    sequenced
+  INSERT   HAIRPIN2MATURE    5    26    pae-let-7a    pae-let-7a-5p
