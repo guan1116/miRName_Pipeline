@@ -1,25 +1,25 @@
-# miRName: The Orthology-Guided miRNA Annotation Pipeline (Demo)
+# miRName: The Orthology-Guided miRNA Annotation Pipeline
 
-> **⚠️ Disclaimer:**
-> This repository is a **simplified demonstration version** of the production pipeline developed at The University of Manchester.
-> * **Core algorithms (Programme 1-4)** and **sensitive data handling modules** have been redacted or simplified to comply with Intellectual Property (IP) and data privacy regulations.
-> * The source code provided here serves to demonstrate **coding standards, system architecture, and documentation skills**.
-> * The **screenshots below** showcase the full functionality of the deployed production system.
+> **Note:**
+> This repository serves as a **codebase demonstration** for the production pipeline developed at The University of Manchester.
+> * **Bin/**: Contains the core algorithmic logic (Programmes 1-4).
+> * **Screenshots**: Below demonstrate the deployed web interface used for high-throughput curation.
+> * **Data**: Uses anonymized demo data for privacy compliance.
 
 ---
 
-## 📸 Production System Preview (Full Pipeline)
+## System Dashboard Preview
 
-The following screenshots demonstrate the UI logic and execution flow of the full production pipeline.
+The following screenshots showcase the interactive curation interface integrated with the pipeline. This dashboard allows researchers to visualize BLAST alignments and make "Accept/Reject" decisions efficiently.
 
 ### 1. Interactive Curation Dashboard
-The web interface integrates BLAST alignments with a "Smart Decision" system, allowing researchers to visualize data and make "Accept/Reject" decisions efficiently.
+The UI visualizes the alignment between candidate sequences and known homologs, calculating identity matrices automatically.
 
 ![Dashboard Preview](dashboard_ui_preview.png)
-*(Figure 1: The curation dashboard showing alignment visualization and decision buttons. Data anonymized for demo purposes.)*
+*(Figure 1: The curation dashboard showing alignment visualization and decision buttons.)*
 
 ### 2. Pipeline Execution Log
-The backend pipeline running on High-Performance Computing (HPC) clusters, orchestrating multi-species data processing.
+The backend orchestration running on the High-Performance Computing (HPC) cluster.
 
 ![Execution Log](pipeline_execution_log.png)
 *(Figure 2: Execution logs showing the wrapper managing concurrent naming tasks.)*
@@ -28,96 +28,63 @@ The backend pipeline running on High-Performance Computing (HPC) clusters, orche
 
 ## Overview
 
-**miRName** is a specialized bioinformatics pipeline and curation platform designed for the automated, orthology-based naming of microRNAs (miRNAs) across diverse metazoan species.
+**miRName** is a specialized bioinformatics pipeline designed for the **automated, orthology-based naming** of microRNAs (miRNAs) across diverse metazoan species.
 
-While traditional annotation tools often assign names sequentially (e.g., mir-1, mir-2) without regard for evolutionary history, **miRName prioritizes evolutionary orthology**. It employs a multi-stage analysis pipeline to cluster sequences and utilizes a strict **"Top-Hit" evidence system**. This ensures that newly annotated miRNAs are named consistently with their homologs in the miRBase registry.
+Unlike traditional tools that assign names sequentially (e.g., *mir-1*, *mir-2*) without regard for evolutionary history, **miRName prioritizes evolutionary orthology**. It employs a multi-stage analysis pipeline to cluster sequences and utilizes a strict **"Top-Hit" evidence system**, ensuring new annotations are consistent with the miRBase registry.
 
-> **Key Goal:** Facilitate the transition from raw sequencing candidates to official database entries, solving critical issues of synonym conflicts and lineage fragmentation.
-
----
-
-## Table of Contents
-- [Naming Logic](#naming-logic)
-- [The Pipeline Workflow](#the-pipeline-workflow)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Web Interface](#web-interface)
-- [Output](#output)
+**Key Goal:** Facilitate the transition from raw sequencing candidates to official database entries, resolving synonym conflicts and lineage fragmentation.
 
 ---
 
 ## Naming Logic
 
-What constitutes a valid miRNA name in miRName is based on strict sequence identity and orthology rules encoded in the **Naming Engine (Programme 4)**.
+The core naming logic is enforced by the scripts located in the `Bin/` directory.
 
-| Naming Criteria | Resulting Nomenclature |
+| Criteria | Action |
 | :--- | :--- |
-| **Identity > 95%**<br>(to a known miRBase entry) | **Strict Top-Hit Override.**<br>The suffix is forced to match the homolog (e.g., *mir-30b* becomes *mir-30b*), overriding any sequential clustering. |
-| **Identity < 95%**<br>(Novel/Ambiguous) | **Sequential Assignment.**<br>Suffixes (a, b, c...) are assigned based on clustering order within the family. |
-| **Absence of Isoform 'a'**<br>(e.g., only 'b' found) | **Gap Preservation.**<br>The system does not back-fill 'a'. This reflects potential gene loss or expression heterogeneity in the specific sample. |
-| **Novel Family**<br>(No homologs found) | Assigned a temporary **Novel-ID** until unified by cross-species analysis. |
+| **Identity > 95%**<br>(to known homolog) | **Strict Top-Hit Override.**<br>Forces the name to match the homolog (e.g., *mir-30b*), overriding sequential clustering. |
+| **Identity < 95%**<br>(Novel/Ambiguous) | **Sequential Assignment.**<br>Suffixes (a, b, c...) assigned based on clustering order. |
+| **Novel Family** | Assigned a temporary **Novel-ID** until unified by cross-species analysis. |
 
 ---
 
-## The Pipeline Workflow
+## Project Architecture
 
-miRName is composed of a data ingestion module, a wrapper runner, and four sequential sub-programmes.
+The pipeline follows a modular architecture controlled by a master wrapper.
 
-### 🔹 Data Ingestion (`transfers_mirsubmit2mirname.py`)
-* **Function:** Bridges the user submission interface (miRSubmit) and the core database (miRName).
-* **Role:** Extracts candidate miRNA data (sequences, reads, metadata) and species information, populates the SQL database, and flags sequences for processing (`Status=1`).
+### Directory Structure
+* **root**: Contains the wrapper runners and ingestion scripts.
+* **Bin/**: Contains the core logic modules (P1 to P4).
+* **TestData/**: Contains anonymized input files for demonstration.
 
-### 🔹 The Wrapper Runner (`naming_runner_mirbaseDB.py`)
-* **Function:** The master controller.
-* **Role:** Monitors the database for pending tasks, manages file locking to prevent race conditions, and orchestrates the execution of Programmes 1 through 4. It also handles error logging and FASTA generation.
+### The Workflow Components
 
-### 🔹 Programme 1: Identification (`naming_programme1.py`)
-* **Function:** Pre-processing and initial identification.
-* **Role:** Parses GFF3/FASTA inputs and maps candidates to the reference genome context. Prepares the dataset for homology searching.
+**1. Data Ingestion (transfers_mirsubmit2mirname.py)**
+Bridges the submission interface (miRSubmit) and the SQL database. Extracts metadata and populates the processing queue.
 
-### 🔹 Programme 2: Homology Search (`naming_programme2_mirbaseDB.py`)
-* **Function:** BLAST against the miRBase database.
-* **Role:** Performs local BLAST searches against `hairpin.fa`. Categorizes hits into "Same Species" (paralogs) and "Different Species" (orthologs) to establish evolutionary context.
+**2. The Wrapper (naming_runner_mirbaseDB.py)**
+* **Master Controller**: Monitors the database for pending tasks.
+* **Concurrency**: Manages file locking to prevent race conditions on the HPC.
+* **Orchestration**: Automatically calls the sub-programmes located in `Bin/`.
 
-### 🔹 Programme 3: Evidence Integration (`naming_programme3.py`)
-* **Function:** Filtering and Evidence Association.
-* **Role:** Integrates mature sequence data with hairpin BLAST results. Compares candidate mature sequences against known MIMAT entries to determine precise mature/star boundaries.
-
-### 🔹 Programme 4: The Naming Engine (`cleaned_naming_programme4.py`)
-* **Function:** Clustering and Final Naming.
-* **Role:**
-    1.  **Clustering:** Groups sequences into families based on mature sequence identity.
-    2.  **Orthology Enforcement:** Applies the V4.0 logic to override names based on >95% identity matches.
-    3.  **Database Commit:** Writes final suggestions and alignment statistics to SQL for web curation.
+**3. Core Modules (Located in Bin/)**
+* `naming_programme1.py`: **Identification** - Maps candidates to genome context.
+* `naming_programme2_mirbaseDB.py`: **Homology Search** - Local BLAST against miRBase.
+* `naming_programme3.py`: **Evidence Integration** - Defines mature/star boundaries.
+* `cleaned_naming_programme4.py`: **The Naming Engine** - Clusters sequences and applies V4.0 logic.
 
 ---
 
-## Installation
+## Installation & Dependencies
 
-miRName consists of backend Python scripts and a Django web application. It is recommended to use a **conda** environment.
+Recommended to run within a `conda` environment.
 
-### Dependencies
-
-* python >= 3.9
-* pandas
-* numpy
-* biopython
-* sqlalchemy
-* pymysql
-* django
-* jellyfish
-* portalocker
-* ncbi-blast+
-
-> **Note regarding RNAfold:** Unlike miRScore or other prediction tools, the miRName naming pipeline **does not require** the ViennaRNA package (RNAfold) for its core naming steps. Structural validation is assumed to have been performed upstream.
-
----
-
-## Usage
-
-miRName is typically deployed as a server-side pipeline.
-
-### 1. Data Transfer (Ingestion)
-Migrate user submissions to the processing queue:
-```bash
-python transfers_mirsubmit2mirname.py
+```text
+python >= 3.9
+pandas
+numpy
+biopython
+sqlalchemy
+pymysql
+django
+ncbi-blast+
