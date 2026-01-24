@@ -1,8 +1,36 @@
-# miRName: The Orthology-Guided miRNA Annotation Pipeline
+# miRName: The Orthology-Guided miRNA Annotation Pipeline (Demo)
+
+> **⚠️ Disclaimer:**
+> This repository is a **simplified demonstration version** of the production pipeline developed at The University of Manchester.
+> * **Core algorithms (Programme 1-4)** and **sensitive data handling modules** have been redacted or simplified to comply with Intellectual Property (IP) and data privacy regulations.
+> * The source code provided here serves to demonstrate **coding standards, system architecture, and documentation skills**.
+> * The **screenshots below** showcase the full functionality of the deployed production system.
+
+---
+
+## 📸 Production System Preview (Full Pipeline)
+
+The following screenshots demonstrate the UI logic and execution flow of the full production pipeline.
+
+### 1. Interactive Curation Dashboard
+The web interface integrates BLAST alignments with a "Smart Decision" system, allowing researchers to visualize data and make "Accept/Reject" decisions efficiently.
+
+![Dashboard Preview](dashboard_ui_preview.png)
+*(Figure 1: The curation dashboard showing alignment visualization and decision buttons. Data anonymized for demo purposes.)*
+
+### 2. Pipeline Execution Log
+The backend pipeline running on High-Performance Computing (HPC) clusters, orchestrating multi-species data processing.
+
+![Execution Log](pipeline_execution_log.png)
+*(Figure 2: Execution logs showing the wrapper managing concurrent naming tasks.)*
+
+---
+
+## Overview
 
 **miRName** is a specialized bioinformatics pipeline and curation platform designed for the automated, orthology-based naming of microRNAs (miRNAs) across diverse metazoan species.
 
-While traditional annotation tools often assign names sequentially (e.g., mir-1, mir-2) without regard for evolutionary history, miRName prioritizes evolutionary orthology. It employs a multi-stage analysis pipeline to cluster sequences and utilizes a strict **"Top-Hit" evidence system**. This ensures that newly annotated miRNAs are named consistently with their homologs in the miRBase registry.
+While traditional annotation tools often assign names sequentially (e.g., mir-1, mir-2) without regard for evolutionary history, **miRName prioritizes evolutionary orthology**. It employs a multi-stage analysis pipeline to cluster sequences and utilizes a strict **"Top-Hit" evidence system**. This ensures that newly annotated miRNAs are named consistently with their homologs in the miRBase registry.
 
 > **Key Goal:** Facilitate the transition from raw sequencing candidates to official database entries, solving critical issues of synonym conflicts and lineage fragmentation.
 
@@ -34,8 +62,6 @@ What constitutes a valid miRNA name in miRName is based on strict sequence ident
 ## The Pipeline Workflow
 
 miRName is composed of a data ingestion module, a wrapper runner, and four sequential sub-programmes.
-
-
 
 ### 🔹 Data Ingestion (`transfers_mirsubmit2mirname.py`)
 * **Function:** Bridges the user submission interface (miRSubmit) and the core database (miRName).
@@ -95,45 +121,3 @@ miRName is typically deployed as a server-side pipeline.
 Migrate user submissions to the processing queue:
 ```bash
 python transfers_mirsubmit2mirname.py
-```
-
-### 2. Run the Pipeline (The Wrapper)
-Execute the runner to process all pending sequences. This script automatically calls P1, P2, P3, and P4.
-```bash
-python naming_runner_mirbaseDB.py
-```
-> **Note:** This script handles locking automatically. Ensure `hairpin.fa` is present in the directory.
-
-### 3. Web Server (Django)
-Start the Django server to access the curation interface:
-```bash
-python manage.py runserver 0.0.0.0:8000
-```
-
----
-
-## Web Interface
-
-The miRName web interface provides a dashboard for manual curation and final validation.
-
-* **Alignment Visualization:** Inspect detailed BLAST alignments between the candidate hairpin and known homologs.
-* **Smart Submit Page:** Batch validate pending candidates. Respects the algorithm's original `db_decision` (Input vs. Reject) unless manually overridden.
-* **Reject Page:** A dedicated button to forcefully reject all items on the current page to filter out low-quality noise quickly.
-* **Update Species Abbreviation:** A batch tool to correct species prefixes (e.g., correcting `Pab-` to `PaE-`) across the entire submission while maintaining data integrity.
-
----
-
-## Output
-
-Once curation is complete, users can generate the final submission files directly from the web interface.
-
-### Validated List (miRBase Format)
-Clicking "Export Validated" generates a relational text file strictly adhering to miRBase submission standards.
-
-**Example:**
-```text
-INSERT	FAMILY	let-7
-INSERT	HAIRPIN	pae-let-7a	Pab-Let-7-P1	Predicted miRNA	UGAGGUAG...	.	pae	let-7	Chr_Un	+	10	90
-INSERT	MATURE	pae-let-7a-5p	experimental	sequenced
-INSERT	HAIRPIN2MATURE	5	26	pae-let-7a	pae-let-7a-5p
-```
